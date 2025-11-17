@@ -5,14 +5,22 @@ export default function ChatBox() {
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState([
-    { id: 1, from: 'bot', text: 'Hi! How can I help you today?' }
+    { id: 1, from: 'bot', text: 'Hi! I\'m here to help. Ask about orders, returns, or products.' , ts: new Date() },
   ])
   const [typing, setTyping] = useState(false)
+  const [unread, setUnread] = useState(0)
   const endRef = useRef(null)
 
   useEffect(() => {
     if (open) endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, open])
+
+  const quickReplies = [
+    'Track my order',
+    'Return policy',
+    'Browse products',
+    'Talk to support'
+  ]
 
   const replyFor = (text) => {
     const t = text.toLowerCase()
@@ -27,7 +35,7 @@ export default function ChatBox() {
     e?.preventDefault()
     const text = input.trim()
     if (!text || typing) return
-    const userMsg = { id: Date.now(), from: 'user', text }
+    const userMsg = { id: Date.now(), from: 'user', text, ts: new Date() }
     setMessages((prev) => [...prev, userMsg])
     setInput('')
     setTyping(true)
@@ -37,9 +45,10 @@ export default function ChatBox() {
     const shortIdMatch = text.match(/#?([a-z0-9]{6})\b/i)
 
     const respond = (botTextOrNode) => {
-      const botMsg = { id: Date.now() + 1, from: 'bot', text: botTextOrNode }
+      const botMsg = { id: Date.now() + 1, from: 'bot', text: botTextOrNode, ts: new Date() }
       setMessages((prev) => [...prev, botMsg])
       setTyping(false)
+      if (!open) setUnread(u => u + 1)
     }
 
     const formatOrderSummary = (order) => {
@@ -90,24 +99,36 @@ export default function ChatBox() {
 
   return (
     <div className={`chatbox ${open ? 'open' : ''}`}>
-      <button className="chatbox-toggle btn primary" onClick={() => setOpen(v => !v)} aria-label="Toggle chat">
-        {open ? 'Close Chat' : 'Chat'}
+      <button
+        className="chatbox-toggle"
+        onClick={() => { setOpen(v => { const n = !v; if (n) setUnread(0); return n }) }}
+        aria-label="Toggle chat"
+        title={open ? 'Close chat' : 'Chat with us'}
+      >
+        <span className="toggle-icon" aria-hidden>💬</span>
+        {!open && unread > 0 && <span className="badge-unread">{unread > 9 ? '9+' : unread}</span>}
       </button>
 
       <div className="chatbox-panel">
         <div className="chatbox-header">
-          <div className="row" style={{ gap: 8 }}>
-            <span className="status-dot" aria-hidden />
+          <div className="row" style={{ gap: 10 }}>
+            <div className="avatar">S</div>
             <div>
               <strong>Support</strong>
-              <div className="muted" style={{ fontSize: 12 }}>Typically replies in under a minute</div>
+              <div className="muted" style={{ fontSize: 12 }}>Online • Typically replies in under a minute</div>
             </div>
+          </div>
+          <div className="header-actions">
+            <button className="btn" onClick={() => setOpen(false)}>—</button>
           </div>
         </div>
         <div className="chatbox-body">
           {messages.map(m => (
             <div key={m.id} className={`chat-msg ${m.from}`}>
-              <div className="bubble">{m.text}</div>
+              <div className="bubble">
+                {m.text}
+                {m.ts && <div className="timestamp">{new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>}
+              </div>
             </div>
           ))}
 
@@ -122,6 +143,13 @@ export default function ChatBox() {
               </div>
             </div>
           )}
+          {!typing && (
+            <div className="quick-replies">
+              {quickReplies.map((q, i) => (
+                <button key={i} type="button" className="chip" onClick={() => { setInput(q); setTimeout(() => { setInput(''); handleSend({ preventDefault: () => {}, }); }, 0) }}>{q}</button>
+              ))}
+            </div>
+          )}
           <div ref={endRef} />
         </div>
         <form className="chatbox-input" onSubmit={handleSend}>
@@ -130,7 +158,7 @@ export default function ChatBox() {
             onChange={e => setInput(e.target.value)}
             placeholder="Type your message..."
           />
-          <button className="btn" type="submit" disabled={!input.trim() || typing}>Send</button>
+          <button className="btn primary" type="submit" disabled={!input.trim() || typing}>Send</button>
         </form>
       </div>
     </div>
