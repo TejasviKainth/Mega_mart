@@ -15,6 +15,8 @@ const userSchema = new mongoose.Schema(
       postalCode: String,
       country: String,
     },
+    otpCode: { type: String },
+    otpExpiresAt: { type: Date },
   },
   { timestamps: true }
 );

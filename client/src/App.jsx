@@ -9,6 +9,7 @@ import Register from './pages/Register'
 import ProductDetail from './pages/ProductDetail'
 import { useAuth } from './state/AuthContext'
 import Footer from './components/Footer'
+import ChatBox from './components/ChatBox'
 
 function PrivateRoute({ children }) {
   const { user } = useAuth()
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="/register" element={<Register />} />
         </Routes>
       </main>
+      <ChatBox />
       <Footer />
     </div>
   )
