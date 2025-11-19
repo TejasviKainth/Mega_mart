@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import ProductSkeleton from '../components/ProductSkeleton'
+
 
 export default function Shop() {
   const location = useLocation()
@@ -12,6 +14,14 @@ export default function Shop() {
 
   const searchParams = new URLSearchParams(location.search)
   const [keyword, setKeyword] = useState(searchParams.get('keyword') || '')
+  const [searchHistory, setSearchHistory] = useState(() => {
+  try {
+    return JSON.parse(localStorage.getItem('searchHistory') || '[]')
+  } catch {
+    return []
+  }
+})
+const [showSuggestions, setShowSuggestions] = useState(false)
   const [categories, setCategories] = useState([])
   const [category, setCategory] = useState(searchParams.get('category') || '')
   const [sort, setSort] = useState(searchParams.get('sort') || 'newest')
@@ -31,7 +41,7 @@ export default function Shop() {
     try {
       const { data } = await api.get('/products/categories/list')
       setCategories(data)
-    } catch {}
+    } catch { }
   }
 
   async function fetchProducts(customPage = page) {
@@ -54,11 +64,19 @@ export default function Shop() {
   }
 
   function submitSearch(e) {
-    e?.preventDefault()
-    setPage(1)
-    fetchProducts(1)
+  e?.preventDefault()
+  setPage(1)
+  
+  // Save to search history
+  if (keyword.trim()) {
+    const newHistory = [keyword, ...searchHistory.filter(h => h !== keyword)].slice(0, 5)
+    setSearchHistory(newHistory)
+    localStorage.setItem('searchHistory', JSON.stringify(newHistory))
   }
-
+  
+  setShowSuggestions(false)
+  fetchProducts(1)
+}
   const showingText = useMemo(() => {
     const start = (page - 1) * limit + 1
     const end = Math.min(page * limit, total)
@@ -70,7 +88,32 @@ export default function Shop() {
     <div className="container">
       <div className="card" style={{ marginBottom: 16, padding: 16 }}>
         <form className="toolbar" onSubmit={submitSearch}>
-          <input value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="Search products..." />
+          <div style={{ position: 'relative', flex: 1 }}>
+  <input 
+    value={keyword} 
+    onChange={e => setKeyword(e.target.value)} 
+    onFocus={() => setShowSuggestions(true)}
+    placeholder="Search products..." 
+  />
+  {showSuggestions && searchHistory.length > 0 && (
+    <div className="search-suggestions">
+      <div className="suggestions-header">Recent Searches</div>
+      {searchHistory.map((term, i) => (
+        <button
+          key={i}
+          className="suggestion-item"
+          onClick={() => {
+            setKeyword(term)
+            setShowSuggestions(false)
+            submitSearch()
+          }}
+        >
+          <span>🔍</span> {term}
+        </button>
+      ))}
+    </div>
+  )}
+</div>
           <select value={category} onChange={e => { setCategory(e.target.value); setPage(1); }}>
             <option value="">All categories</option>
             {categories.map(c => (
@@ -96,7 +139,13 @@ export default function Shop() {
         </div>
       </div>
 
-      {loading ? <p>Loading...</p> : (
+      {loading ? (
+        <div className="grid">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <ProductSkeleton key={i} />
+          ))}
+        </div>
+      ) : (
         products.length === 0 ? (
           <div className="card" style={{ padding: 16 }}>
             <p>No products found. Try adjusting filters.</p>
@@ -107,7 +156,15 @@ export default function Shop() {
               {products.map(p => (
                 <div key={p._id} className="card">
                   <Link to={`/product/${p._id}`}>
-                    <img src={p.image || 'https://via.placeholder.com/400x300?text=Product'} alt={p.name} />
+                    <img
+                      src={p.image?.startsWith('http') ? p.image : `/uploads/${p.image}`}
+                      alt={p.name}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://via.placeholder.com/400x300?text=Product+Image';
+                      }}
+                      style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+                    />
                     <h3>{p.name}</h3>
                   </Link>
                   <p className="muted">{p.brand} • {p.category}</p>

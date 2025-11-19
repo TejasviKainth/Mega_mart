@@ -9,6 +9,7 @@ require('dotenv').config();
 const authRoutes = require('./src/routes/auth');
 const productRoutes = require('./src/routes/products');
 const orderRoutes = require('./src/routes/orders');
+const paymentRoutes = require('./src/routes/payment');
 const { connectDB } = require('./src/config/db');
 
 const app = express();
@@ -20,10 +21,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // Serve static client if built
 const clientBuildPath = path.join(__dirname, 'client', 'dist');

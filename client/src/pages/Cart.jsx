@@ -1,8 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../state/CartContext'
+import { useToast } from '../state/ToastContext'
 
 export default function Cart() {
   const { items, removeFromCart, updateQty, summary } = useCart()
+  const { showToast } = useToast()
   const navigate = useNavigate()
 
   if (items.length === 0) {
@@ -34,10 +36,14 @@ export default function Cart() {
               </div>
               <select value={i.qty} onChange={e => updateQty(i.product, +e.target.value)}>
                 {Array.from({ length: 10 }).map((_, idx) => (
-                  <option key={idx+1} value={idx+1}>{idx+1}</option>
+                  <option key={idx + 1} value={idx + 1}>{idx + 1}</option>
                 ))}
               </select>
-              <button className="btn danger" onClick={() => removeFromCart(i.product)}>Remove</button>
+              <button className="btn danger" onClick={() => {
+                removeFromCart(i.product)
+                showToast('Item removed from cart', 'success')
+              }}>Remove</button>
+              
             </div>
           ))}
         </div>

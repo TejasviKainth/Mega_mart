@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { useCart } from '../state/CartContext'
+import Payment from '../components/Payment'
+import { toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 export default function Billing() {
   const { items, summary, clearCart } = useCart()
@@ -16,17 +19,67 @@ export default function Billing() {
     country: 'India'
   })
   const [paymentMethod, setPaymentMethod] = useState('COD')
+  const [showRazorpay, setShowRazorpay] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [orderData, setOrderData] = useState(null)
+
+  useEffect(() => {
+    // Initialize order data when cart changes
+    if (items.length > 0) {
+      const orderItems = items.map(i => ({
+        product: i.product,
+        name: i.name,
+        qty: i.qty,
+        price: i.price,
+        image: i.image,
+      }));
+      
+      setOrderData({
+        _id: `order_${Date.now()}`,
+        totalPrice: summary.totalPrice,
+        user: {
+          name: 'Customer', // You can replace with actual user data
+          email: 'customer@example.com' // You can replace with actual user data
+        },
+        shippingAddress: {
+          ...address,
+          phone: '1234567890' // Add a default or get from user profile
+        },
+        orderItems
+      });
+    }
+  }, [items, summary.totalPrice, address]);
+
+  const handlePaymentSuccess = () => {
+    // This will be called when Razorpay payment is successful
+    toast.success('Payment successful! Your order has been placed.');
+    clearCart();
+    navigate('/orders');
+  };
+
+  const handleRazorpayClose = () => {
+    setShowRazorpay(false);
+    setPaymentMethod('COD'); // Reset to COD if Razorpay is closed
+  };
 
   async function placeOrder(e) {
-    e.preventDefault()
-    setError('')
+    e.preventDefault();
+    setError('');
+    
     if (items.length === 0) {
-      setError('Your cart is empty')
-      return
+      setError('Your cart is empty');
+      return;
     }
-    setLoading(true)
+
+    // If Razorpay is selected, show the payment component
+    if (paymentMethod === 'Razorpay') {
+      setShowRazorpay(true);
+      return;
+    }
+
+    // For other payment methods (like COD)
+    setLoading(true);
     try {
       const orderItems = items.map(i => ({
         product: i.product,
@@ -34,18 +87,23 @@ export default function Billing() {
         qty: i.qty,
         price: i.price,
         image: i.image,
-      }))
+      }));
+      
       await api.post('/orders', {
         orderItems,
         shippingAddress: address,
         paymentMethod
-      })
-      clearCart()
-      navigate('/orders')
+      });
+      
+      toast.success('Order placed successfully!');
+      clearCart();
+      navigate('/orders');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to place order')
+      const errorMsg = err.response?.data?.message || 'Failed to place order';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -86,13 +144,38 @@ export default function Billing() {
 
           <h3>Payment</h3>
           <label>Payment Method</label>
-          <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
+          <select 
+            value={paymentMethod} 
+            onChange={e => setPaymentMethod(e.target.value)}
+            className="form-select"
+          >
             <option value="COD">Cash on Delivery</option>
-            <option value="Card" disabled>Card (demo)</option>
-            <option value="UPI" disabled>UPI (demo)</option>
+            <option value="Razorpay">Pay with Razorpay</option>
+            <option value="Card" disabled>Card (coming soon)</option>
+            <option value="UPI" disabled>UPI (coming soon)</option>
           </select>
+          
+          {paymentMethod === 'Razorpay' && (
+            <div className="payment-note" style={{ margin: '10px 0', fontSize: '14px', color: '#666' }}>
+              <p>You'll be redirected to Razorpay's secure payment page to complete your purchase.</p>
+            </div>
+          )}
 
-          <button className="btn primary" type="submit" disabled={loading}>{loading ? 'Placing order...' : 'Place Order'}</button>
+          <button 
+            className="btn primary" 
+            type="submit" 
+            disabled={loading || (paymentMethod === 'Razorpay' && !orderData)}
+          >
+            {loading ? 'Processing...' : paymentMethod === 'Razorpay' ? 'Proceed to Payment' : 'Place Order'}
+          </button>
+          
+          {showRazorpay && orderData && (
+            <Payment
+              order={orderData}
+              onSuccess={handlePaymentSuccess}
+              onClose={handleRazorpayClose}
+            />
+          )}
         </form>
 
         <div className="card summary" style={{ height: 'fit-content', padding: 16 }}>

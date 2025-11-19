@@ -8,6 +8,7 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null)
   const [qty, setQty] = useState(1)
   const [loading, setLoading] = useState(true)
+  const [message, setMessage] = useState('') // New state for notification
   const { addToCart } = useCart()
 
   useEffect(() => {
@@ -17,6 +18,15 @@ export default function ProductDetail() {
       setLoading(false)
     })()
   }, [id])
+
+  // Function to handle adding to cart with a success notification
+  function handleAddToCart() {
+    if (product.countInStock === 0) return 
+    addToCart(product, qty)
+    setMessage(`Added ${qty} × ${product.name} to cart!`)
+    // Clear message after 3 seconds for a smooth, temporary notification
+    setTimeout(() => setMessage(''), 3000)
+  }
 
   if (loading) return <div className="container"><p>Loading...</p></div>
   if (!product) return <div className="container"><p>Product not found</p></div>
@@ -48,8 +58,12 @@ export default function ProductDetail() {
             ))}
           </select>
         </div>
+        
+        {/* Success Notification - uses the new .alert.success class from styles.css */}
+        {message && <div className="alert success">{message}</div>}
+
         <div className="row" style={{ gap: 10 }}>
-          <button className="btn primary" onClick={() => addToCart(product, qty)} disabled={product.countInStock === 0}>
+          <button className="btn primary" onClick={handleAddToCart} disabled={product.countInStock === 0}>
             {product.countInStock === 0 ? 'Out of stock' : 'Add to Cart'}
           </button>
           <button className="btn" onClick={() => window.history.back()}>Back</button>

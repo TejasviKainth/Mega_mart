@@ -43,3 +43,6 @@ client/build/
 # Misc
 *.local
 *.log.*
+
+# Environment variables
+.env

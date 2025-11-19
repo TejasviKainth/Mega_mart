@@ -1,8 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { useToast } from './ToastContext'
 
 const CartContext = createContext()
 
 export function CartProvider({ children }) {
+  const toast = useToast?.() || { showToast: () => {} }
   const [items, setItems] = useState(() => {
     try {
       const saved = localStorage.getItem('cart')
@@ -16,27 +18,28 @@ export function CartProvider({ children }) {
     localStorage.setItem('cart', JSON.stringify(items))
   }, [items])
 
-  function addToCart(product, qty = 1) {
-    setItems(prev => {
-      const idx = prev.findIndex(i => i.product === product._id)
-      if (idx >= 0) {
-        const copy = [...prev]
-        copy[idx] = { ...copy[idx], qty: copy[idx].qty + qty }
-        return copy
+ function addToCart(product, qty = 1) {
+  setItems(prev => {
+    const idx = prev.findIndex(i => i.product === product._id)
+    if (idx >= 0) {
+      const copy = [...prev]
+      copy[idx] = { ...copy[idx], qty: copy[idx].qty + qty }
+      toast.showToast?.(`Updated ${product.name} quantity`, 'success')
+      return copy
+    }
+    toast.showToast?.(`Added ${product.name} to cart`, 'success')
+    return [
+      ...prev,
+      {
+        product: product._id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        qty
       }
-      return [
-        ...prev,
-        {
-          product: product._id,
-          name: product.name,
-          price: product.price,
-          image: product.image,
-          qty
-        }
-      ]
-    })
-  }
-
+    ]
+  })
+}
   function removeFromCart(productId) {
     setItems(prev => prev.filter(i => i.product !== productId))
   }
