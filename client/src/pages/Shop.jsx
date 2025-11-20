@@ -3,6 +3,16 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import ProductSkeleton from '../components/ProductSkeleton'
 
+const fallbackImages = {
+  mobiles: 'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?auto=format&fit=crop&w=800&q=80',
+  laptops: 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=900&q=80',
+  audio: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=900&q=80',
+  appliances: 'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=900&q=80',
+  fashion: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80',
+  'home & kitchen': 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=900&q=80',
+  default: 'https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=900&q=80'
+}
+
 
 export default function Shop() {
   const location = useLocation()
@@ -153,28 +163,37 @@ const [showSuggestions, setShowSuggestions] = useState(false)
         ) : (
           <>
             <div className="grid">
-              {products.map(p => (
-                <div key={p._id} className="card">
-                  <Link to={`/product/${p._id}`}>
-                    <img
-                      src={p.image?.startsWith('http') ? p.image : `/uploads/${p.image}`}
-                      alt={p.name}
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = 'https://via.placeholder.com/400x300?text=Product+Image';
-                      }}
-                      style={{ width: '100%', height: '200px', objectFit: 'cover' }}
-                    />
-                    <h3>{p.name}</h3>
-                  </Link>
-                  <p className="muted">{p.brand} • {p.category}</p>
-                  <p className="price">₹{p.price}</p>
-                  <div className="row between">
-                    <span className="muted">★ {p.rating?.toFixed?.(1) ?? p.rating}</span>
-                    <Link to={`/product/${p._id}`} className="btn primary">View</Link>
+              {products.map(p => {
+                const categoryKey = p.category?.toLowerCase?.() || 'default'
+                const fallback = fallbackImages[categoryKey] || fallbackImages.default
+                const hasCustomImage = Boolean(p.image)
+                const imageSrc = hasCustomImage
+                  ? (p.image.startsWith('http') ? p.image : `/uploads/${p.image}`)
+                  : fallback
+
+                return (
+                  <div key={p._id} className="card">
+                    <Link to={`/product/${p._id}`}>
+                      <img
+                        src={imageSrc}
+                        alt={p.name}
+                        onError={(e) => {
+                          e.target.onerror = null
+                          e.target.src = fallback
+                        }}
+                        style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+                      />
+                      <h3>{p.name}</h3>
+                    </Link>
+                    <p className="muted">{p.brand} • {p.category}</p>
+                    <p className="price">₹{p.price}</p>
+                    <div className="row between">
+                      <span className="muted">★ {p.rating?.toFixed?.(1) ?? p.rating}</span>
+                      <Link to={`/product/${p._id}`} className="btn primary">View</Link>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             <div className="row" style={{ justifyContent: 'center', marginTop: 16, gap: 8 }}>

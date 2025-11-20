@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { useCart } from '../state/CartContext'
@@ -24,36 +24,10 @@ export default function Billing() {
   const [loading, setLoading] = useState(false)
   const [orderData, setOrderData] = useState(null)
 
-  useEffect(() => {
-    // Initialize order data when cart changes
-    if (items.length > 0) {
-      const orderItems = items.map(i => ({
-        product: i.product,
-        name: i.name,
-        qty: i.qty,
-        price: i.price,
-        image: i.image,
-      }));
-      
-      setOrderData({
-        _id: `order_${Date.now()}`,
-        totalPrice: summary.totalPrice,
-        user: {
-          name: 'Customer', // You can replace with actual user data
-          email: 'customer@example.com' // You can replace with actual user data
-        },
-        shippingAddress: {
-          ...address,
-          phone: '1234567890' // Add a default or get from user profile
-        },
-        orderItems
-      });
-    }
-  }, [items, summary.totalPrice, address]);
-
   const handlePaymentSuccess = () => {
     // This will be called when Razorpay payment is successful
     toast.success('Payment successful! Your order has been placed.');
+    setShowRazorpay(false);
     clearCart();
     navigate('/orders');
   };
@@ -62,6 +36,29 @@ export default function Billing() {
     setShowRazorpay(false);
     setPaymentMethod('COD'); // Reset to COD if Razorpay is closed
   };
+
+  const buildOrderPayload = (paymentType) => {
+    const orderItems = items.map(i => ({
+      product: i.product,
+      name: i.name,
+      qty: i.qty,
+      price: i.price,
+      image: i.image,
+    }));
+
+    return {
+      orderItems,
+      shippingAddress: address,
+      paymentMethod: paymentType,
+    }
+  }
+
+  async function createOrder(paymentType) {
+    const payload = buildOrderPayload(paymentType)
+    const { data } = await api.post('/orders', payload)
+    setOrderData(data)
+    return data
+  }
 
   async function placeOrder(e) {
     e.preventDefault();
@@ -72,29 +69,16 @@ export default function Billing() {
       return;
     }
 
-    // If Razorpay is selected, show the payment component
-    if (paymentMethod === 'Razorpay') {
-      setShowRazorpay(true);
-      return;
-    }
-
-    // For other payment methods (like COD)
     setLoading(true);
     try {
-      const orderItems = items.map(i => ({
-        product: i.product,
-        name: i.name,
-        qty: i.qty,
-        price: i.price,
-        image: i.image,
-      }));
-      
-      await api.post('/orders', {
-        orderItems,
-        shippingAddress: address,
-        paymentMethod
-      });
-      
+      if (paymentMethod === 'Razorpay') {
+        const created = await createOrder('Razorpay')
+        toast.info('Order created. Complete payment to confirm.');
+        if (created) setShowRazorpay(true);
+        return;
+      }
+
+      await createOrder(paymentMethod)
       toast.success('Order placed successfully!');
       clearCart();
       navigate('/orders');
@@ -164,7 +148,7 @@ export default function Billing() {
           <button 
             className="btn primary" 
             type="submit" 
-            disabled={loading || (paymentMethod === 'Razorpay' && !orderData)}
+            disabled={loading}
           >
             {loading ? 'Processing...' : paymentMethod === 'Razorpay' ? 'Proceed to Payment' : 'Place Order'}
           </button>

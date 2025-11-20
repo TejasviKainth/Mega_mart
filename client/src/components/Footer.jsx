@@ -3,11 +3,16 @@ import { Link } from 'react-router-dom'
 export default function Footer() {
   return (
     <footer className="site-footer">
-      <div className="container">
+      <div className="footer-glow" aria-hidden="true" />
+      <div className="footer-shell">
         <div className="footer-grid">
           <div className="footer-brand">
             <Link to="/" className="logo">MegaMart</Link>
             <p className="muted">Your one‑stop shop for electronics, fashion, and home essentials. Great deals. Fast delivery.</p>
+            <div className="footer-pill-row">
+              <span className="footer-pill">Same-day dispatch</span>
+              <span className="footer-pill">24/7 concierge</span>
+            </div>
           </div>
 
           <div className="footer-col">
@@ -45,9 +50,11 @@ export default function Footer() {
           </div>
         </div>
 
+        <div className="footer-divider" aria-hidden="true" />
+
         <div className="footer-bottom">
           <p>© {new Date().getFullYear()} MegaMart • All rights reserved</p>
-          <div className="row" style={{ gap: 12 }}>
+          <div className="footer-links">
             <a href="#" onClick={e => e.preventDefault()}>Privacy</a>
             <a href="#" onClick={e => e.preventDefault()}>Terms</a>
             <a href="#" onClick={e => e.preventDefault()}>Cookies</a>
