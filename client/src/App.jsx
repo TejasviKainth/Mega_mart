@@ -3,6 +3,8 @@ import Home from './pages/Home'
 import Shop from './pages/Shop'
 import Cart from './pages/Cart'
 import Orders from './pages/Orders'
+import OrderDetail from './pages/OrderDetail'
+import OrderDelivered from './pages/OrderDelivered'
 import Billing from './pages/Billing'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -66,6 +68,8 @@ export default function App() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/billing" element={<PrivateRoute><Billing /></PrivateRoute>} />
           <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
+          <Route path="/orders/:id" element={<PrivateRoute><OrderDetail /></PrivateRoute>} />
+          <Route path="/orders/:id/delivered" element={<PrivateRoute><OrderDelivered /></PrivateRoute>} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Routes>
