@@ -26,8 +26,17 @@ export default function App() {
   return (
     <div className="app-container">
       <header className="header">
-        <Link to="/" className="logo">MegaMart</Link>
+        <Link to="/" className="logo" title="MegaMart">
+          MegaMart
+        </Link>
         <nav className="nav">
+          {user && (
+            <div className="nav-logo" aria-label={`Logged in as ${user.name}`}>
+              <span className="user-badge">
+                {user.name?.trim()?.charAt(0)?.toUpperCase()}
+              </span>
+            </div>
+          )}
           <Link to="/shop">Shop</Link>
           <Link to="/trending">Trending</Link>
           <Link to="/cart">
